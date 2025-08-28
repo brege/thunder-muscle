@@ -1,0 +1,14 @@
+# user assets
+assets/*
+assets/!README.md
+data/*
+
+# normal python junk
+.Pipfile
+.Pipfile.lock
+
+*.pyc
+*.pyo
+
+__pycache__
+*/__pycache__/*

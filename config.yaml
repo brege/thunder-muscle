@@ -1,0 +1,10 @@
+data:
+  directory: data
+  profile: btajokz2.default-release
+  pickle_suffix: _emails.pkl
+  default_format: csv
+
+thunderbird:
+  api_key: null  # Set when needed for tagging
+
+# Command line args can override any of these values
