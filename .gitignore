@@ -2,6 +2,8 @@
 assets/*
 assets/!README.md
 data/*
+config.yaml
+config.yml
 
 # normal python junk
 .Pipfile

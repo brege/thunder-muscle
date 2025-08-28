@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
-Thunder Muscle - Single unified tool for Thunderbird email analysis
+Thunder Muscle - Thunderbird email dataset API
 """
 import sqlite3
 import json
 import re
 import argparse
 from pathlib import Path
+import sys
+sys.path.append('lib')
+from output import write_data
+from config import load_config, get_profile_path, get_output_format, get_data_directory
 
 def extract_domain(email_addr):
     """Extract domain from email address"""
@@ -20,7 +24,7 @@ def extract_domain(email_addr):
         return domain_match.group(1).lower() if domain_match else "malformed"
     return "malformed"
 
-def extract_complete_dataset(profile_path, output_file):
+def extract_complete_dataset(profile_path, output_file, output_format='json'):
     """Extract complete email dataset from Gloda"""
     db_path = Path(profile_path) / "global-messages-db.sqlite"
     if not db_path.exists():
@@ -65,13 +69,12 @@ def extract_complete_dataset(profile_path, output_file):
     
     conn.close()
     
-    with open(output_file, 'w') as f:
-        json.dump(emails, f, indent=2)
+    format_used = write_data(emails, output_file, output_format)
     
     with_bodies = sum(1 for e in emails if e['has_body'])
-    print(f"Extracted {len(emails)} emails ({with_bodies} with bodies) to {output_file}")
+    print(f"Extracted {len(emails)} emails ({with_bodies} with bodies) to {output_file} ({format_used})")
 
-def filter_emails(input_file, output_file, **filters):
+def filter_emails(input_file, output_file, output_format='json', **filters):
     """Filter emails by various criteria"""
     with open(input_file, 'r') as f:
         emails = json.load(f)
@@ -80,7 +83,18 @@ def filter_emails(input_file, output_file, **filters):
     
     for key, value in filters.items():
         if key == 'domain' and value:
-            results = [e for e in results if e.get('from_domain', '').lower() == value.lower()]
+            if value.startswith('*.'):
+                # Wildcard pattern like *.edu
+                domain_suffix = value[2:].lower()
+                results = [e for e in results if e.get('from_domain', '').lower().endswith(domain_suffix)]
+            else:
+                # Exact domain match or regex
+                try:
+                    domain_regex = re.compile(value, re.IGNORECASE)
+                    results = [e for e in results if domain_regex.search(e.get('from_domain', ''))]
+                except re.error:
+                    # Fall back to exact match if regex is invalid
+                    results = [e for e in results if e.get('from_domain', '').lower() == value.lower()]
         elif key == 'year' and value:
             results = [e for e in results if value in str(e.get('date', ''))]
         elif key == 'subject_contains' and value:
@@ -90,38 +104,29 @@ def filter_emails(input_file, output_file, **filters):
         elif key == 'limit' and value:
             results = results[:int(value)]
     
-    with open(output_file, 'w') as f:
-        json.dump(results, f, indent=2)
+    format_used = write_data(results, output_file, output_format)
     
-    print(f"Filtered to {len(results)} emails, saved to {output_file}")
+    print(f"Filtered to {len(results)} emails, saved to {output_file} ({format_used})")
 
-def analyze_content(input_file, pattern="unsubscribe", case_sensitive=False):
-    """Analyze email content for patterns"""
+def query_emails(input_file, pattern=None, case_sensitive=False):
+    """Query emails matching pattern, return matching emails"""
     with open(input_file, 'r') as f:
         emails = json.load(f)
+    
+    if not pattern:
+        return emails
     
     flags = 0 if case_sensitive else re.IGNORECASE
     regex = re.compile(pattern, flags)
     
-    # Analyze both subjects and bodies
-    subject_matches = []
-    body_matches = []
-    
+    matches = []
     for email in emails:
-        if regex.search(email.get('subject', '')):
-            subject_matches.append(email['message_id'])
-        if email.get('has_body') and regex.search(email.get('body', '')):
-            body_matches.append(email['message_id'])
+        if regex.search(email.get('subject', '')) or \
+           (email.get('has_body') and regex.search(email.get('body', ''))):
+            matches.append(email)
     
-    total_emails = len(emails)
-    emails_with_bodies = sum(1 for e in emails if e.get('has_body'))
-    
-    print(f"Content analysis for pattern: '{pattern}'")
-    print(f"  Total emails analyzed: {total_emails}")
-    print(f"  Emails with bodies: {emails_with_bodies}")
-    print(f"  Matches in subjects: {len(subject_matches)}/{total_emails} ({len(subject_matches)/total_emails*100:.1f}%)")
-    if emails_with_bodies > 0:
-        print(f"  Matches in bodies: {len(body_matches)}/{emails_with_bodies} ({len(body_matches)/emails_with_bodies*100:.1f}%)")
+    return matches
+
 
 def stats(input_file):
     """Show dataset statistics"""
@@ -165,24 +170,28 @@ if __name__ == "__main__":
     
     # Extract command
     extract_parser = subparsers.add_parser('extract', help='Extract complete dataset from Thunderbird')
-    extract_parser.add_argument('--profile', required=True, help='Path to Thunderbird profile')
-    extract_parser.add_argument('--output', default='data/complete_dataset.json', help='Output file')
+    extract_parser.add_argument('--profile', help='Path to Thunderbird profile')
+    extract_parser.add_argument('--output', help='Output file')
+    extract_parser.add_argument('--format', choices=['json', 'csv', 'yaml'], help='Output format')
     
     # Filter command
     filter_parser = subparsers.add_parser('filter', help='Filter emails')
     filter_parser.add_argument('input_file', help='Input JSON file')
-    filter_parser.add_argument('output_file', help='Output JSON file')
+    filter_parser.add_argument('output_file', help='Output file')
     filter_parser.add_argument('--domain', help='Filter by domain')
     filter_parser.add_argument('--year', help='Filter by year')
     filter_parser.add_argument('--subject-contains', help='Filter by subject content')
     filter_parser.add_argument('--has-body', action='store_true', help='Only emails with bodies')
     filter_parser.add_argument('--limit', type=int, help='Limit results')
+    filter_parser.add_argument('--format', choices=['json', 'csv', 'yaml'], help='Output format')
     
-    # Analyze command
-    analyze_parser = subparsers.add_parser('analyze', help='Analyze email content')
-    analyze_parser.add_argument('input_file', help='Input JSON file')
-    analyze_parser.add_argument('--pattern', default='unsubscribe', help='Pattern to search for')
-    analyze_parser.add_argument('--case-sensitive', action='store_true', help='Case sensitive search')
+    # Query command  
+    query_parser = subparsers.add_parser('query', help='Query emails matching pattern')
+    query_parser.add_argument('input_file', help='Input JSON file')
+    query_parser.add_argument('output_file', help='Output file')
+    query_parser.add_argument('--pattern', help='Pattern to search for')
+    query_parser.add_argument('--case-sensitive', action='store_true', help='Case sensitive search')
+    query_parser.add_argument('--format', choices=['json', 'csv', 'yaml'], help='Output format')
     
     # Stats command
     stats_parser = subparsers.add_parser('stats', help='Show dataset statistics')
@@ -191,15 +200,25 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     try:
+        config = load_config()
+        
         if args.command == 'extract':
-            extract_complete_dataset(args.profile, args.output)
+            profile = get_profile_path(config, args.profile)
+            data_dir = get_data_directory(config)
+            output = args.output or f"{data_dir}/complete_dataset.json"
+            output_format = args.format or get_output_format(config)
+            extract_complete_dataset(profile, output, output_format)
         elif args.command == 'filter':
-            filter_emails(args.input_file, args.output_file,
+            output_format = args.format or get_output_format(config)
+            filter_emails(args.input_file, args.output_file, output_format,
                          domain=args.domain, year=args.year, 
                          subject_contains=args.subject_contains,
                          has_body=args.has_body, limit=args.limit)
-        elif args.command == 'analyze':
-            analyze_content(args.input_file, args.pattern, args.case_sensitive)
+        elif args.command == 'query':
+            output_format = args.format or get_output_format(config)
+            results = query_emails(args.input_file, args.pattern, args.case_sensitive)
+            format_used = write_data(results, args.output_file, output_format)
+            print(f"Found {len(results)} matching emails, saved to {args.output_file} ({format_used})")
         elif args.command == 'stats':
             stats(args.input_file)
         else:
