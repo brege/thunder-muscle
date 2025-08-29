@@ -1,0 +1,35 @@
+name: "Marketing Spam Analysis"
+description: "Analyze frequency and trends of marketing/survey spam emails over time"
+
+steps:
+  - name: "extract_complete_dataset"
+    action: "extract"
+    params:
+      format: "json"
+      output: "assets/complete_dataset.json"
+
+  - name: "analyze_spam_keywords"
+    action: "analyze_spam_keywords"
+    params:
+      input: "assets/complete_dataset.json"
+      output: "output/analysis/spam_keyword_analysis.json"
+      format: "json"
+
+  - name: "plot_spam_trends"
+    action: "plot_spam_trends"
+    params:
+      input: "output/analysis/spam_keyword_analysis.json"
+      plot_type: "all"
+      output_dir: "output/plots/spam"
+      title: "Marketing Spam Trends Analysis"
+      display: "save"
+
+  - name: "analyze_spam_by_domain"
+    action: "analyze_domains"  
+    params:
+      input: "assets/complete_dataset.json"
+      compare_pattern: "survey|questionnaire|rate us|feedback"
+      pattern: "survey"
+      threshold: 0.5
+      output: "output/analysis/spam_domains.json"
+      format: "json"
