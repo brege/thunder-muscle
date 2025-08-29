@@ -1,8 +1,7 @@
 # user assets
-assets/*
-assets/!README.md
-data/*
-user/*
+assets/
+data/
+user/
 
 # config
 config.yaml
