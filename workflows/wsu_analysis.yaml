@@ -1,0 +1,55 @@
+name: "WSU Email Volume Analysis"
+description: "Comprehensive analysis of emails sent to WSU addresses"
+
+steps:
+  - name: "extract_dataset"
+    action: "extract"
+    params:
+      format: "json"
+      output: "assets/complete_dataset.json"
+  
+  - name: "plot_wsu_volume"
+    action: "plot_temporal"
+    params:
+      input: "assets/complete_dataset.json"
+      filter_domain: "wsu.edu"
+      plot_type: "both"
+      output_dir: "output/plots/wsu"
+      title: "WSU Email Volume Analysis"
+      display: "save"
+  
+  - name: "filter_wsu_emails_with_body"
+    action: "filter"
+    params:
+      input: "assets/complete_dataset.json"
+      output: "output/datasets/wsu_with_body.json"
+      domain: "wsu.edu"
+      has_body: true
+      format: "json"
+  
+  - name: "temporal_analysis_yearly"
+    action: "analyze_temporal"
+    params:
+      input: "output/datasets/wsu_with_body.json"
+      analysis: "year"
+      output: "output/analysis/wsu_yearly_analysis.csv"
+      format: "csv"
+  
+  - name: "temporal_analysis_monthly_2016"
+    action: "analyze_temporal"
+    params:
+      input: "output/datasets/wsu_with_body.json"
+      analysis: "month"
+      year: 2016
+      output: "output/analysis/wsu_2016_monthly.json"
+      format: "json"
+  
+  - name: "unsubscribe_analysis_wsu"
+    action: "analyze_domains"
+    params:
+      input: "assets/complete_dataset.json"
+      compare_pattern: "wsu.edu"
+      pattern: "unsubscribe"
+      threshold: 0.85
+      output: "output/analysis/wsu_unsubscribe_domains.json"
+      format: "json"

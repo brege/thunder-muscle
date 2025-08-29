@@ -17,8 +17,7 @@ from config import (  # noqa: E402
     load_config,
     get_profile_path,
     get_output_format,
-    get_data_directory,
-    get_default_extract_filename,
+    get_default_complete_dataset_path,
     get_extraction_filters,
     should_filter_email,
 )
@@ -268,9 +267,7 @@ if __name__ == "__main__":
 
         if args.command == "extract":
             profile = get_profile_path(config, args.profile)
-            data_dir = get_data_directory(config)
-            default_filename = get_default_extract_filename(config)
-            output = args.output or f"{data_dir}/{default_filename}"
+            output = args.output or get_default_complete_dataset_path(config)
             output_format = args.format or get_output_format(config)
             extract_complete_dataset(profile, output, output_format, config)
         elif args.command == "filter":

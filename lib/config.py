@@ -21,7 +21,12 @@ def get_profile_path(config, profile_arg=None):
     if profile_arg:
         return profile_arg
 
-    profile_name = config.get("data", {}).get("profile")
+    # New config structure
+    profile_name = config.get("thunderbird", {}).get("profile")
+    if not profile_name:
+        # Backward compatibility
+        profile_name = config.get("data", {}).get("profile")
+
     if profile_name:
         return f"assets/{profile_name}"
 
@@ -33,19 +38,77 @@ def get_output_format(config, format_arg=None):
     if format_arg:
         return format_arg
 
-    return config.get("data", {}).get("default_format", "json")
+    # New config structure
+    format_val = config.get("defaults", {}).get("output_format")
+    if not format_val:
+        # Backward compatibility
+        format_val = config.get("data", {}).get("default_format", "json")
+
+    return format_val
 
 
 def get_data_directory(config):
-    """Get data directory from config"""
+    """Get data directory from config (deprecated - use get_directories)"""
+    # Backward compatibility
     return config.get("data", {}).get("directory", "data")
 
 
+def get_directories(config):
+    """Get directory structure from config"""
+    directories = config.get("directories", {})
+    return {
+        "assets": directories.get("assets", "assets"),
+        "output": directories.get("output", "output"),
+        "cache": directories.get("cache", "cache"),
+    }
+
+
+def get_output_structure(config):
+    """Get output subdirectory structure from config"""
+    structure = config.get("output_structure", {})
+    return {
+        "datasets": structure.get("datasets", "output/datasets"),
+        "analysis": structure.get("analysis", "output/analysis"),
+        "plots": structure.get("plots", "output/plots"),
+    }
+
+
+def get_default_complete_dataset_path(config):
+    """Get path to complete dataset from config"""
+    return config.get("defaults", {}).get(
+        "complete_dataset", "assets/complete_dataset.json"
+    )
+
+
 def get_default_extract_filename(config):
-    """Get default extraction filename from config"""
+    """Get default extraction filename from config (deprecated)"""
+    # Backward compatibility
     return config.get("data", {}).get(
         "default_extract_filename", "complete_dataset.json"
     )
+
+
+def should_auto_create_dirs(config):
+    """Check if directories should be auto-created"""
+    return config.get("workflows", {}).get("auto_create_dirs", True)
+
+
+def ensure_directories_exist(config):
+    """Create necessary directories if they don't exist"""
+    if not should_auto_create_dirs(config):
+        return
+
+    from pathlib import Path
+
+    # Create main directories
+    directories = get_directories(config)
+    for dir_path in directories.values():
+        Path(dir_path).mkdir(parents=True, exist_ok=True)
+
+    # Create output subdirectories
+    output_structure = get_output_structure(config)
+    for dir_path in output_structure.values():
+        Path(dir_path).mkdir(parents=True, exist_ok=True)
 
 
 def get_extraction_filters(config):

@@ -1,7 +1,6 @@
 # user assets
 assets/
-data/
-user/
+output/
 
 # config
 config.yaml

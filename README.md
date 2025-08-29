@@ -63,6 +63,12 @@ All commands support `--format json|csv|yaml`. Default format configured in `con
 
 Since the tool uses direct "Gloda" (**Glo**bal **Da**tabase) access, the JSON extraction takes roughly 2 seconds to extract 35K emails on a 2015 netbook.
 
+## Workflows (`workflows/`)
+
+| Grad-school Emails (monthly) | Grad-school Emails (yearly) | 
+|:---:|:---:|
+| <img src="docs/img/timeline.png" alt="Grad-school Emails (monthly)"/> | <img src="docs/img/year_over_year_histogram.png" alt="Grad-school Emails (yearly)"/> |
+
 ## License
 
 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)
