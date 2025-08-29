@@ -2,6 +2,7 @@ data:
   directory: data
   profile: your-profile-name.default-release
   default_format: csv
+  default_extract_filename: "complete_dataset.json"  # Or tb-emails.csv, etc.
 
 # Global filters applied during extraction
 filters:
