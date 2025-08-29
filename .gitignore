@@ -8,6 +8,8 @@ config.yaml
 config.yml
 
 # normal python junk
+venv/
+
 .Pipfile
 .Pipfile.lock
 

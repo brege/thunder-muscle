@@ -20,6 +20,9 @@ pycodestyle==2.14.0
 pyflakes==3.4.0
 PyYAML==6.0.2
 requests==2.32.5
+setuptools==80.9.0
 urllib3==2.5.0
 virtualenv==20.34.0
+yamlfixer-opt-nc==0.9.15
+yamllint==1.37.1
 yarg==0.1.10
