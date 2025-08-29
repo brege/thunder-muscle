@@ -1,4 +1,4 @@
-# Thunder Muscle
+# thunder-muscle
 
 Fast Thunderbird email dataset extraction and analysis using Gloda database.
 
@@ -16,18 +16,16 @@ pip install -r requirements.txt
 ```
 
 ### Thunderbird Profile
-You must ensure your Thunderbird profile is indexed.
+1. You must ensure your Thunderbird profile is indexed.
+   ![Thunderbird Index Settings](docs/img/thunderbird-index-settings.png)
 
-1. Settings → Search "Indexing":
-   1. [✓] *Enable Global Search and Indexer*
-   2. *Message Store Type for new accounts* → Select *File per folder (mbox)*
-2. Tools → Activity Manager - wait for indexing to complete
-3. Copy Thunderbird's profile folder (e.g. ~/.thunderbird/) to a location of your choice
+2. Copy Thunderbird's profile folder (e.g. `~/.thunderbird/abc123d.default-release`) to a location of your choice
    ``` bash
    cp ~/.thunderbird/*.default-release assets/
    ```
-   If you want to run directly on the in-situ profile on your computer, Thunderbird must be closed first.
-4. Configure `config.yaml` with your profile name and preferences, if desired (see `config.example.yaml`)
+   If you want to run directly on the in-situ profile on your computer, you must close Thunderbird.
+
+3. (Optional) Configure `config.yaml` with your profile name and preferences (see `config.example.yaml`)
 
 ## Usage
 
@@ -65,7 +63,7 @@ Since the tool uses direct "Gloda" (**Glo**bal **Da**tabase) access, the JSON ex
 
 ## Workflows [ `workflows/` ]
 
-Thunder Muscle uses YAML workflows to define multi-step analysis pipelines. The workflow runner automatically discovers and executes tools from the `analyzers/`, `plotters/`, and `tools/` directories, making it easy to chain data extraction, filtering, analysis, and visualization into reproducible pipelines.
+**thunder-muscle** uses YAML workflows to define multi-step analysis pipelines. The workflow runner automatically discovers and executes tools from the `analyzers/`, `plotters/`, and `tools/` directories, making it easy to chain data extraction, filtering, analysis, and visualization into reproducible pipelines.
 
 ```bash
 # Run any workflow
@@ -77,13 +75,12 @@ python3 lib/workflow.py workflows/spam_analysis.yaml
 I'm not intentionally a data hoarder, I'm just not an aggressive email deleter and filter user. 
 This has changed some in recent years, as the techniques for spam emails have evolved to covertly trojan "survey" subterfuge into your mailbox. Surveys are marketing emails, and a quick analysis on my email history (minimal deletions) has shown that my hunch on survey spam is mostly correct. Around 2023, I began marking all surveys as spam.
 
-Much of this can be done in a Jupyter notebook with a few lines of code. I'm not against notebooks. They are far more friendly than this model. 
+Much of this can be done in a Jupyter notebook--far easier to refresh plots this way--although `:MarkdownPreview` in **Neovim** is quite good. I'm not against notebooks. They are far more friendly than this model. 
 
-I developed this method in my Markdown-to-PDF project, **[[oshea](https://github.com/brege/oshea)**, where I discovered comprehensive end-to-end tests were just manifest workflows for data manipulation. It's an easy way to string command line sequences together. The pipeline term in machine learning/data science is similar to this system.
-
+I developed this method in my Markdown-to-PDF project--**[oshea](https://github.com/brege/oshea)**--where I realized comprehensive end-to-end tests were just manifest workflows. It's an intuitive way to string command line sequences together. The *pipeline* term in machine learning/data science is congruent to this system.
 
 ```bash
-docs/img/ # from workflows/ -> output/plots/
+docs/img/ # <- output/plots/ <- workflows/
 ├── spam
 │   ├── spam_heatmap.png
 │   ├── spam_keywords.png
@@ -133,9 +130,7 @@ Another useful filter for spam emails is checking for keywords like **`unsubscri
 
 ![Spam Timeline](docs/img/spam/spam_heatmap.png)
 
-The heatmap (filtered to post-2010 data with GDPR noise removed) shows "satisfaction" spam as the most persistent threat, maintaining 20-25% frequency from 2012 onwards. Survey-based spam shows steady growth, intensifying after 2020 as companies became increasingly desperate for customer feedback during the pandemic.
-
-**Satisfaction feedback surveys are advertisements.**
+The heatmap (filtered to post-2010) shows "satisfaction" spam as the most persistent threat, maintaining 20-25% frequency from 2012 onwards. Survey-based spam shows steady growth, intensifying after 2020, when both GDPR constraints pressured companies to invent new angles of attack, becoming increasingly desperate for customer "feedback" (attention) during the pandemic. **Satisfaction feedback surveys are advertisements.**
 
 ## License
 
