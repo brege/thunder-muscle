@@ -35,3 +35,67 @@ def get_output_format(config, format_arg=None):
 def get_data_directory(config):
     """Get data directory from config"""
     return config.get('data', {}).get('directory', 'data')
+
+def get_extraction_filters(config):
+    """Get extraction filters from config"""
+    return config.get('filters', {})
+
+def should_filter_email(email, filters):
+    """Check if email should be filtered out based on config filters"""
+    if not filters:
+        return False
+    
+    # Check ignore_from_domains (backward compatibility with ignore_domains)
+    ignore_from_domains = filters.get('ignore_from_domains', filters.get('ignore_domains', []))
+    if ignore_from_domains:
+        domain = email.get('from_domain', '').lower()
+        for ignore_pattern in ignore_from_domains:
+            if ignore_pattern.startswith('*.'):
+                if domain.endswith(ignore_pattern[2:].lower()):
+                    return True
+            elif domain == ignore_pattern.lower():
+                return True
+    
+    # Check include_from_domains (overrides ignore, backward compatibility)
+    include_from_domains = filters.get('include_from_domains', filters.get('include_domains', []))
+    if include_from_domains:
+        domain = email.get('from_domain', '').lower()
+        included = False
+        for include_pattern in include_from_domains:
+            if include_pattern.startswith('*.'):
+                if domain.endswith(include_pattern[2:].lower()):
+                    included = True
+                    break
+            elif domain == include_pattern.lower():
+                included = True
+                break
+        if not included:
+            return True
+    
+    # Check ignore_to_domains
+    ignore_to_domains = filters.get('ignore_to_domains', [])
+    if ignore_to_domains:
+        to_field = email.get('to', '').lower()
+        for ignore_pattern in ignore_to_domains:
+            if ignore_pattern.lower() in to_field:
+                return True
+    
+    # Check ignore_folders
+    ignore_folders = filters.get('ignore_folders', [])
+    if ignore_folders:
+        folder = email.get('folder', '').lower()
+        for ignore_folder in ignore_folders:
+            if ignore_folder.lower() in folder:
+                return True
+    
+    # Check date ranges
+    date_after = filters.get('date_after')
+    date_before = filters.get('date_before')
+    if date_after or date_before:
+        email_date = email.get('date', '')
+        if date_after and email_date < date_after:
+            return True
+        if date_before and email_date > date_before:
+            return True
+    
+    return False

@@ -1,6 +1,37 @@
 data:
   directory: data
-  profile: ""
+  profile: your-profile-name.default-release
   default_format: csv
 
+# Global filters applied during extraction
+filters:
+  # Ignore emails FROM these domains (sender filtering)
+  ignore_from_domains:
+    - "hotmail.com"
+    - "outlook.com" 
+    - "gmail.com"
+    - "yahoo.com"
+  
+  # Only include emails FROM these domains (optional - overrides ignore)
+  # include_from_domains:
+  #   - "wsu.edu"
+  #   - "*.edu"
+  
+  # Ignore emails TO these domains (recipient filtering)
+  # ignore_to_domains:
+  #   - "spam@example.com"
+  
+  # Ignore folders (optional)
+  ignore_folders:
+    - "Trash"
+    - "Spam"
+    - "Junk"
+  
+  # Date range filtering (optional)
+  # date_after: "2020-01-01"
+  # date_before: "2024-12-31"
 
+# Analysis defaults
+analysis:
+  default_threshold: 0.95
+  temp_dir: "/tmp"

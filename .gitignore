@@ -2,6 +2,9 @@
 assets/*
 assets/!README.md
 data/*
+user/*
+
+# config
 config.yaml
 config.yml
 

@@ -10,7 +10,7 @@ from pathlib import Path
 import sys
 sys.path.append('lib')
 from output import write_data
-from config import load_config, get_profile_path, get_output_format, get_data_directory
+from config import load_config, get_profile_path, get_output_format, get_data_directory, get_extraction_filters, should_filter_email
 
 def extract_domain(email_addr):
     """Extract domain from email address"""
@@ -24,7 +24,7 @@ def extract_domain(email_addr):
         return domain_match.group(1).lower() if domain_match else "malformed"
     return "malformed"
 
-def extract_complete_dataset(profile_path, output_file, output_format='json'):
+def extract_complete_dataset(profile_path, output_file, output_format='json', config=None):
     """Extract complete email dataset from Gloda"""
     db_path = Path(profile_path) / "global-messages-db.sqlite"
     if not db_path.exists():
@@ -52,10 +52,13 @@ def extract_complete_dataset(profile_path, output_file, output_format='json'):
     cursor.execute(sql)
     rows = cursor.fetchall()
     
+    filters = get_extraction_filters(config or {})
+    
     emails = []
+    filtered_count = 0
     for row in rows:
         msg_id, date, from_field, to_field, subject, body_text, folder_path = row
-        emails.append({
+        email = {
             'message_id': f'<{msg_id}>' if msg_id and not msg_id.startswith('<') else msg_id or '',
             'date': date or '',
             'from': from_field or '',
@@ -65,14 +68,21 @@ def extract_complete_dataset(profile_path, output_file, output_format='json'):
             'folder': folder_path or '',
             'body': body_text or '',
             'has_body': bool(body_text)
-        })
+        }
+        
+        if should_filter_email(email, filters):
+            filtered_count += 1
+            continue
+            
+        emails.append(email)
     
     conn.close()
     
     format_used = write_data(emails, output_file, output_format)
     
     with_bodies = sum(1 for e in emails if e['has_body'])
-    print(f"Extracted {len(emails)} emails ({with_bodies} with bodies) to {output_file} ({format_used})")
+    filter_msg = f" (filtered out {filtered_count})" if filtered_count > 0 else ""
+    print(f"Extracted {len(emails)} emails ({with_bodies} with bodies) to {output_file} ({format_used}){filter_msg}")
 
 def filter_emails(input_file, output_file, output_format='json', **filters):
     """Filter emails by various criteria"""
@@ -207,7 +217,7 @@ if __name__ == "__main__":
             data_dir = get_data_directory(config)
             output = args.output or f"{data_dir}/complete_dataset.json"
             output_format = args.format or get_output_format(config)
-            extract_complete_dataset(profile, output, output_format)
+            extract_complete_dataset(profile, output, output_format, config)
         elif args.command == 'filter':
             output_format = args.format or get_output_format(config)
             filter_emails(args.input_file, args.output_file, output_format,
